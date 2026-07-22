@@ -42,17 +42,20 @@ export const getAboutSectionImageUrl = (section: AboutSection): string => {
 };
 
 export const getActiveAboutSections = (sections: AboutSection[]): AboutSection[] =>
-  sections.filter((s) => s?.id && s.status === 'active');
+  sections ? sections.filter((s) => s?.id && s.status === 'active') : [];
 
-export const fetchAboutUs = async (): Promise<AboutUsData> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/about-us`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch about us data: ${response.status}`);
+export const fetchAboutUs = async (): Promise<AboutUsData | null> => {
+  try {
+    if (!API_BASE_URL) return null;
+    const response = await fetch(`${API_BASE_URL}/api/v1/about-us`, {
+      signal: AbortSignal.timeout(3000),
+      next: { revalidate: 3600 }
+    });
+    if (!response.ok) return null;
+    const result: AboutUsResponse = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error("fetchAboutUs error:", error);
+    return null;
   }
-  const result: AboutUsResponse = await response.json();
-  if (!result.success) {
-    throw new Error(result.message || 'API returned an unsuccessful response');
-  }
-  return result.data;
 };
-

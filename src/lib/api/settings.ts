@@ -57,19 +57,20 @@ export interface SettingsResponse {
   data: Settings;
 }
 
-export const fetchSettings = async (): Promise<Settings> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/settings`);
+export const fetchSettings = async (): Promise<Settings | null> => {
+  try {
+    if (!API_BASE_URL) return null;
+    const response = await fetch(`${API_BASE_URL}/api/v1/settings`, {
+      signal: AbortSignal.timeout(3000),
+      next: { revalidate: 3600 }
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch settings');
+    if (!response.ok) return null;
+
+    const data: SettingsResponse = await response.json();
+    return data.success ? data.data : null;
+  } catch (error) {
+    console.error("fetchSettings error:", error);
+    return null;
   }
-
-  const data: SettingsResponse = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.message || 'Failed to fetch settings');
-  }
-
-  return data.data;
 };
-

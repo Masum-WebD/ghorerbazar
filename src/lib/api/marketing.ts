@@ -31,26 +31,25 @@ export interface SitemapDataResponse {
 export const fetchMarketingConfig = async (): Promise<MarketingConfig> => {
   try {
     if (!API_BASE_URL) {
-      console.warn("API_BASE_URL is not defined, skipping fetchMarketingConfig");
-      throw new Error("API_BASE_URL is not defined");
+      return { gtm_id: null, ga4_measurement_id: null, gsc_verification_token: null };
     }
     const response = await fetch(`${API_BASE_URL}/api/v1/marketing-configs`, {
-      next: { revalidate: 3600 }, // cache server-side for 1 hour
+      signal: AbortSignal.timeout(3000),
+      next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      return { gtm_id: null, ga4_measurement_id: null, gsc_verification_token: null };
     }
 
     const data: MarketingConfigResponse = await response.json();
 
-    if (!data.success) {
-      throw new Error(data.message || "Failed to fetch marketing configurations");
+    if (!data.success || !data.data) {
+      return { gtm_id: null, ga4_measurement_id: null, gsc_verification_token: null };
     }
 
     return data.data;
   } catch (error) {
-    console.error("fetchMarketingConfig error:", error);
     return {
       gtm_id: null,
       ga4_measurement_id: null,
@@ -60,31 +59,30 @@ export const fetchMarketingConfig = async (): Promise<MarketingConfig> => {
 };
 
 /**
- * Fetch dynamic URLs, last modified dates, and priorities from Laravel API.
+ * Fetch sitemap dynamic data from Laravel API.
  */
 export const fetchSitemapData = async (): Promise<SitemapItem[]> => {
   try {
     if (!API_BASE_URL) {
-      console.warn("API_BASE_URL is not defined, skipping fetchSitemapData");
-      throw new Error("API_BASE_URL is not defined");
+      return [];
     }
     const response = await fetch(`${API_BASE_URL}/api/v1/sitemap-data`, {
-      next: { revalidate: 1800 }, // cache server-side for 30 minutes
+      signal: AbortSignal.timeout(3000),
+      next: { revalidate: 1800 },
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      return [];
     }
 
     const data: SitemapDataResponse = await response.json();
 
-    if (!data.success) {
-      throw new Error(data.message || "Failed to fetch sitemap data");
+    if (!data.success || !data.data) {
+      return [];
     }
 
     return data.data;
   } catch (error) {
-    console.error("fetchSitemapData error:", error);
     return [];
   }
 };

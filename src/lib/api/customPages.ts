@@ -1,4 +1,4 @@
-﻿import { API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./config";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -76,31 +76,34 @@ interface CustomPageDetailResponse {
 
 /** Fetch all active custom pages (used for footer "Other Products" links). */
 export const fetchCustomPages = async (): Promise<CustomPageListItem[]> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/custom-pages`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch custom pages: ${response.status}`);
+  try {
+    if (!API_BASE_URL) return [];
+    const response = await fetch(`${API_BASE_URL}/api/v1/custom-pages`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) return [];
+    const result: CustomPagesListResponse = await response.json();
+    return result.success ? result.data : [];
+  } catch (error) {
+    console.error("fetchCustomPages error:", error);
+    return [];
   }
-  const result: CustomPagesListResponse = await response.json();
-  if (!result.success) {
-    throw new Error(result.message || "API returned an unsuccessful response");
-  }
-  return result.data;
 };
 
 /** Fetch a single custom page by slug (includes SEO data + associated products). */
-export const fetchCustomPageBySlug = async (slug: string): Promise<CustomPageDetail> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/custom-pages/${slug}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch custom page "${slug}": ${response.status}`);
+export const fetchCustomPageBySlug = async (slug: string): Promise<CustomPageDetail | null> => {
+  try {
+    if (!API_BASE_URL) return null;
+    const response = await fetch(`${API_BASE_URL}/api/v1/custom-pages/${slug}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) return null;
+    const result: CustomPageDetailResponse = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error(`fetchCustomPageBySlug error (${slug}):`, error);
+    return null;
   }
-  const result: CustomPageDetailResponse = await response.json();
-  if (!result.success) {
-    throw new Error(result.message || "API returned an unsuccessful response");
-  }
-  return result.data;
 };
-

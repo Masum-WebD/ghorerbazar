@@ -1,4 +1,4 @@
-﻿import { API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./config";
 
 export interface ContactData {
   id: number;
@@ -31,16 +31,24 @@ export interface ContactFormResponse {
   message: string;
 }
 
-export const fetchContacts = async (): Promise<ContactData> => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/contacts`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch contact data: ${response.status}`);
+export const fetchContacts = async (): Promise<ContactData | null> => {
+  try {
+    if (!API_BASE_URL) {
+      return null;
+    }
+    const response = await fetch(`${API_BASE_URL}/api/v1/contacts`, {
+      signal: AbortSignal.timeout(3000),
+      next: { revalidate: 3600 }
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const result: ContactResponse = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error("fetchContacts error:", error);
+    return null;
   }
-  const result: ContactResponse = await response.json();
-  if (!result.success) {
-    throw new Error(result.message || 'API returned an unsuccessful response');
-  }
-  return result.data;
 };
 
 export const submitContactForm = async (payload: ContactFormPayload): Promise<ContactFormResponse> => {
@@ -48,6 +56,7 @@ export const submitContactForm = async (payload: ContactFormPayload): Promise<Co
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000)
   });
   const result: ContactFormResponse = await response.json();
   if (!response.ok || !result.success) {
@@ -58,7 +67,7 @@ export const submitContactForm = async (payload: ContactFormPayload): Promise<Co
 
 /** Extract iframe src from an embed HTML string returned by the API. */
 export const extractMapEmbedSrc = (embedHtml: string): string | null => {
+  if (!embedHtml) return null;
   const match = embedHtml.match(/src=["']([^"']+)["']/i);
-  return match?.[1] ?? null;
+  return match ? match[1] : null;
 };
-
