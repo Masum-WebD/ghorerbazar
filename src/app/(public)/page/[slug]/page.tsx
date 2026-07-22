@@ -11,7 +11,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   try {
     const resolvedParams = await params;
     const page = await fetchCustomPageBySlug(resolvedParams.slug);
-    console.log(page)
+    if (!page) {
+      return {
+        title: "Page | Ghorer Bazar"
+      };
+    }
     return {
       title: page.meta_title || page.title,
       description: page.meta_description,
@@ -24,7 +28,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     };
   } catch (error) {
     return {
-      title: "Page | Siraj Tech"
+      title: "Page | Ghorer Bazar"
     };
   }
 }
